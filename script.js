@@ -97,8 +97,15 @@ form.addEventListener("submit", function (event) {
   const text = noteInput.value.trim();
 
   if (text === "") {
+    errorMessage.textContent = "Please type a note first.";
     return;
   }
+  if (text.length > MAX_LENGTH) {
+    errorMessage.textContent = "Notes must be 200 characters or fewer.";
+    return;
+  }
+
+  errorMessage.textContent = "";
   addNote(text, categorySelect.value);
   noteInput.value = "";
   noteInput.focus();
