@@ -4,14 +4,35 @@
 const form = document.querySelector("#note-form");
 const noteInput = document.querySelector("#note-input");
 const categorySelect = document.querySelector("#note-category");
+const searchInput = document.querySelector("#search-input");
 const notesList = document.querySelector("#notes-list");
 const noteCount = document.querySelector("#note-count");
 const errorMessage = document.querySelector("#error-message");
+const clearAllButton = document.querySelector("#clear-all");
 
+const STORAGE_KEY = "quicknotes";
 const MAX_LENGTH = 200;
 
 // ----- Data: array of note objects { id, text, category, createdAt } -----
-let notes = [];
+let notes = loadNotes();
+
+// ----- localStorage -----
+function loadNotes() {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (!saved) {
+    return [];
+  }
+  try {
+    const parsed = JSON.parse(saved);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+function saveNotes() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
+}
 
 // ----- Helpers -----
 function capitalize(word) {
@@ -62,7 +83,17 @@ function createNoteElement(note) {
 function render() {
   notesList.textContent = "";
 
-  const visible = notes;
+  const query = searchInput.value.trim().toLowerCase();
+  const visible = notes.filter(function (note) {
+    return note.text.toLowerCase().includes(query);
+  });
+
+  if (query !== "" && visible.length === 0) {
+    const empty = document.createElement("li");
+    empty.className = "empty-message";
+    empty.textContent = "No notes match your search.";
+    notesList.appendChild(empty);
+  }
 
   visible.forEach(function (note) {
     notesList.appendChild(createNoteElement(note));
@@ -80,6 +111,7 @@ function addNote(text, category) {
     createdAt: new Date().toLocaleString()
   };
   notes.push(note);
+  saveNotes();
   render();
 }
 
@@ -88,6 +120,7 @@ function deleteNote(id) {
   notes = notes.filter(function (note) {
     return note.id !== id;
   });
+  saveNotes();
   render();
 }
 
@@ -111,6 +144,19 @@ form.addEventListener("submit", function (event) {
   noteInput.focus();
 });
 
+searchInput.addEventListener("input", render);
+
+// Bonus: Clear all with confirmation
+clearAllButton.addEventListener("click", function () {
+  if (notes.length === 0) {
+    return;
+  }
+  if (confirm("Delete all notes?")) {
+    notes = [];
+    saveNotes();
+    render();
+  }
+});
 
 // Initial render
 render();
